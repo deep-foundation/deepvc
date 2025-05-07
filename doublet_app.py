@@ -6,25 +6,22 @@ matplotlib.use('Agg')
 
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QFileDialog, QLabel, QMessageBox, QLineEdit,
-                             QColorDialog, QStackedWidget, QListWidget, QListWidgetItem)
+                             QColorDialog, QStackedWidget, QListWidget, QListWidgetItem,
+                             QTableWidget, QTableWidgetItem, QHeaderView)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QColor
 import pandas as pd
 
 def install_dependencies():
     import shutil
-
     required = {
         'pandas': 'pandas',
         'matplotlib': 'matplotlib',
         'networkx': 'networkx',
         'PyQt6': 'PyQt6'
     }
-
-    apt_packages = {
-        'PyQt6': 'python3-pyqt6'
-    }
-
+    apt_packages = {'PyQt6': 'python3-pyqt6'}
+    
     installed = []
     for package in required:
         try:
@@ -36,7 +33,6 @@ def install_dependencies():
     if not all(installed):
         print("Installing missing dependencies...")
         packages_to_install = [required[pkg] for pkg, ok in zip(required, installed) if not ok]
-
         for pkg in packages_to_install:
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
@@ -68,7 +64,7 @@ class DeepVCApp(QMainWindow):
         super().__init__()
         
         self.visual_params = {
-            'loop_color': '#FF0000',
+            'loop_color': '#FFA500',
             'edge_color': '#000000',
             'inter_edge_color': '#0000FF',
             'background_color': '#FFFFFF',
@@ -81,74 +77,118 @@ class DeepVCApp(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle('DeepVC')
-        self.setGeometry(300, 300, 1000, 700)
+        self.setGeometry(300, 300, 1100, 750)
         
         icon_path = os.path.join('img', 'logo', 'logo.png')
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
-        else:
-            print(f"Icon not found at: {icon_path}")
 
         main_layout = QHBoxLayout()
         central_widget = QWidget()
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
+        # Navigation panel
         nav_panel = QListWidget()
-        nav_panel.setFixedWidth(200)
-        nav_panel.addItem(QListWidgetItem("Data Loading"))
-        nav_panel.addItem(QListWidgetItem("Data Processing"))
-        nav_panel.addItem(QListWidgetItem("Visualization"))
-        nav_panel.currentRowChanged.connect(self.display_page)
+        nav_panel.setFixedWidth(250)
+        nav_panel.setStyleSheet("""
+            QListWidget {
+                font-size: 14px;
+                background-color: #2e3436;
+                border: none;
+            }
+            QListWidget::item {
+                height: 40px;
+                padding: 5px;
+                border-bottom: 1px solid #2e3436;
+            }
+            QListWidget::item:selected {
+                background-color: #FFA500;
+                color: white;
+            }
+        """)
+        
+        for item_text in ["Data Loading", "Data Processing", "Visualization"]:
+            item = QListWidgetItem(item_text)
+            item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            nav_panel.addItem(item)
+        
+        nav_panel.currentRowChanged.connect(self.switch_page)
 
         self.pages = QStackedWidget()
 
         # Page 1: File loading
         page_load = QWidget()
+        page_load.setStyleSheet("background-color: #2e3436;")
         load_layout = QVBoxLayout()
         
         self.file_label = QLabel("No file selected")
-        self.file_label.setStyleSheet("font-size: 14px; color: gray;")
+        self.file_label.setStyleSheet("font-size: 14px; color: #F5F5F5;")
+        
         btn_load = QPushButton("Load CSV")
         btn_load.setStyleSheet("""
             QPushButton {
                 padding: 10px;
                 font-size: 14px;
-                background-color: #4CAF50;
+                background-color: #FFA500;
                 color: white;
                 border: none;
                 border-radius: 5px;
             }
             QPushButton:hover {
-                background-color: #45a049;
+                background-color: #FF8C00;
+            }
+            QPushButton:pressed {
+                background-color: #CC7000;
             }
         """)
         btn_load.clicked.connect(self.load_file)
         
+        self.preview_table = QTableWidget()
+        self.preview_table.setStyleSheet("""
+            QTableWidget {
+                background-color: #2e3436;
+                border: 1px solid #2e3436;
+                font-size: 12px;
+            }
+            QHeaderView::section {
+                background-color: #FFA500;
+                color: white;
+                padding: 5px;
+            }
+        """)
+        self.preview_table.horizontalHeader().setStretchLastSection(True)
+        self.preview_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        
         load_layout.addWidget(self.file_label)
         load_layout.addWidget(btn_load)
-        load_layout.addStretch()
+        load_layout.addWidget(QLabel("Data Preview (first 5 rows):"))
+        load_layout.addWidget(self.preview_table)
         page_load.setLayout(load_layout)
 
         # Page 2: Data processing
         page_process = QWidget()
+        page_process.setStyleSheet("background-color: #2e3436;")
         process_layout = QVBoxLayout()
         
         self.process_status_label = QLabel("No data loaded")
-        self.process_status_label.setStyleSheet("font-size: 14px; color: gray;")
+        self.process_status_label.setStyleSheet("font-size: 14px; color: #333333;")
         
         btn_process = QPushButton("Process Data")
         btn_process.setStyleSheet("""
             QPushButton {
                 padding: 10px;
                 font-size: 14px;
-                background-color: #2196F3;
+                background-color: #FFA500;
                 color: white;
                 border: none;
                 border-radius: 5px;
             }
             QPushButton:hover {
-                background-color: #0b7dda;
+                background-color: #FF8C00;
+            }
+            QPushButton:pressed {
+                background-color: #CC7000;
             }
         """)
         btn_process.clicked.connect(self.process_data)
@@ -158,13 +198,16 @@ class DeepVCApp(QMainWindow):
             QPushButton {
                 padding: 10px;
                 font-size: 14px;
-                background-color: #ff9800;
+                background-color: #FFA500;
                 color: white;
                 border: none;
                 border-radius: 5px;
             }
             QPushButton:hover {
-                background-color: #e68a00;
+                background-color: #FF8C00;
+            }
+            QPushButton:pressed {
+                background-color: #CC7000;
             }
         """)
         btn_save.clicked.connect(self.save_result)
@@ -177,6 +220,7 @@ class DeepVCApp(QMainWindow):
 
         # Page 3: Visualization
         page_visual = QWidget()
+        page_visual.setStyleSheet("background-color: #2e3436;")
         visual_layout = QVBoxLayout()
 
         params_layout = QVBoxLayout()
@@ -195,7 +239,7 @@ class DeepVCApp(QMainWindow):
             btn.clicked.connect(self.create_color_picker(param))
             self.color_pickers[param] = btn
             label = QLabel(label_text)
-            label.setStyleSheet("font-size: 14px;")
+            label.setStyleSheet("font-size: 14px; color: #F5F5F5;")
             row = QHBoxLayout()
             row.addWidget(label)
             row.addWidget(btn)
@@ -203,7 +247,15 @@ class DeepVCApp(QMainWindow):
 
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("Enter visualization title")
-        self.title_edit.setStyleSheet("padding: 5px; font-size: 14px;")
+        self.title_edit.setStyleSheet("""
+            QLineEdit {
+                padding: 5px;
+                font-size: 14px;
+                background-color: white;
+                border: 1px solid #2e3436;
+                border-radius: 3px;
+            }
+        """)
         params_layout.addWidget(self.title_edit)
 
         btn_visualize = QPushButton("Generate Visualization")
@@ -211,13 +263,16 @@ class DeepVCApp(QMainWindow):
             QPushButton {
                 padding: 10px;
                 font-size: 14px;
-                background-color: #9C27B0;
+                background-color: #FFA500;
                 color: white;
                 border: none;
                 border-radius: 5px;
             }
             QPushButton:hover {
-                background-color: #7B1FA2;
+                background-color: #FF8C00;
+            }
+            QPushButton:pressed {
+                background-color: #CC7000;
             }
         """)
         btn_visualize.clicked.connect(self.run_visualization)
@@ -236,7 +291,7 @@ class DeepVCApp(QMainWindow):
 
         self.update_color_buttons()
 
-    def display_page(self, index):
+    def switch_page(self, index):
         self.pages.setCurrentIndex(index)
         if index == 1:  # Process page
             if self.current_df is not None:
@@ -258,6 +313,20 @@ class DeepVCApp(QMainWindow):
         for param, btn in self.color_pickers.items():
             btn.setStyleSheet(f"background-color: {self.visual_params[param]};")
 
+    def update_preview(self):
+        if self.current_df is not None:
+            preview_df = self.current_df.head(5)
+            self.preview_table.setRowCount(preview_df.shape[0])
+            self.preview_table.setColumnCount(preview_df.shape[1])
+            self.preview_table.setHorizontalHeaderLabels(preview_df.columns)
+            
+            for i in range(preview_df.shape[0]):
+                for j in range(preview_df.shape[1]):
+                    item = QTableWidgetItem(str(preview_df.iloc[i, j]))
+                    self.preview_table.setItem(i, j, item)
+            
+            self.preview_table.resizeColumnsToContents()
+
     def load_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "Open CSV File", "", "CSV Files (*.csv)")
         if path:
@@ -265,10 +334,14 @@ class DeepVCApp(QMainWindow):
                 self.current_df = pd.read_csv(path)
                 self.file_label.setText(f"Loaded file: {os.path.basename(path)}")
                 self.file_label.setStyleSheet("font-size: 14px; color: green;")
+                self.update_preview()
                 QMessageBox.information(self, "Success", "File loaded successfully!")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load file: {str(e)}")
                 self.file_label.setStyleSheet("font-size: 14px; color: red;")
+                self.preview_table.clear()
+                self.preview_table.setRowCount(0)
+                self.preview_table.setColumnCount(0)
 
     def process_data(self):
         if self.current_df is not None:
