@@ -1,0 +1,114 @@
+/* Base page styles */
+body {
+    background-color: #2e3436;
+    color: #F5F5F5;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #ffffff;
+    border-right: 1px solid #cccccc;
+    padding-top: 10px;
+}
+
+.nav-title {
+    font-size: 24px;
+    font-weight: bold;
+    padding: 10px 10px 5px 10px;
+    text-align: center;
+    color: #000000;
+    cursor: pointer;
+    display: block;
+}
+
+.nav-title:hover {
+    color: #3d3d3d;
+    text-decoration: none;
+}
+
+.nav-section {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 20px 10px 5px 10px;
+    color: #000000;
+    opacity: 0.8;
+    border-top: 1px solid #ccc;
+}
+
+a.nav-link {
+    display: block;
+    padding: 8px 15px;
+    color: #000000;
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+a.nav-link:hover {
+    background-color: #f0f0f0;
+    border-radius: 5px;
+}
+
+/* Headings */
+.page-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #363636;
+    margin-bottom: 20px;
+}
+
+/* Dataframe table */
+[data-testid="stDataFrame"] {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Remove default radio button styles */
+.css-1r6slb0, .css-1n76uvr {
+    display: none !important;
+}
+
+/* Style navigation buttons to look like links */
+.stSidebar button {
+    background: none !important;
+    border: none !important;
+    padding: 8px 15px !important;
+    color: #000000 !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    margin-bottom: 5px !important;
+    text-align: left !important;
+    width: 100% !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+}
+
+.stSidebar button:hover {
+    background-color: #f0f0f0 !important;
+    border-radius: 5px !important;
+}
+
+/* Стиль для блока информации о файле */
+.upload-info-box {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #3d4144 !important;  /* Темно-серый цвет */
+    border-radius: 5px;
+    color: #ffffff !important;
+    border: 1px solid #5a5e62;
+}
+
+/* Цвет текста в блоке информации */
+.upload-info-box strong {
+    color: #bdbdbd !important;  /* серый для заголовков */
+}
+
+/* Фиксируем кнопку скрытия панели (оставляя оригинальный дизайн) */
+[data-testid="stSidebarCollapseButton"] {
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+}

@@ -1,0 +1,256 @@
+import streamlit as st
+import pandas as pd
+from pathlib import Path
+from deepcore import sort_duoblet
+from deepvisual import visualize_link_doublet
+import matplotlib.pyplot as plt
+import io
+
+# --- Set page config ---
+st.set_page_config(
+    page_title="DeepVC",
+    layout="wide",
+    page_icon="img/logo/logo.png"
+)
+
+# --- Inject custom CSS ---
+with open("style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# --- Navigation control ---
+# Define pages in your app
+PAGES = {
+    "Home": "Home",
+    "Uploading data": "Uploading data",
+    "Sorting the data": "Sorting the data",
+    "Visualization of links": "Visualization of links"
+}
+
+# Initialize session state for page navigation and file info
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = "Home"
+if 'file_info' not in st.session_state:
+    st.session_state.file_info = None
+
+# Function to change page
+def change_page(page):
+    st.session_state.current_page = page
+
+# --- Sidebar Navigation ---
+# Добавьте этот стиль в начало сайдбара
+st.sidebar.markdown("""
+<style>
+    .fake-title {
+        font-size: 24px;
+        font-weight: bold;
+        padding: 10px 10px 5px 10px;
+        text-align: center;
+        color: #000000;
+        cursor: pointer;
+        display: block;
+        margin-bottom: 20px;
+    }
+    .fake-title:hover {
+        color: #3d3d3d;
+        text-decoration: none;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Создаем невидимую кнопку и стилизуем ее как заголовок
+col1, col2, col3 = st.sidebar.columns([1,6,1])
+with col2:
+    if st.button("DeepVC", key="main_title"):
+        change_page("Home")
+    st.markdown("""
+    <style>
+        div[data-testid="stHorizontalBlock"] button {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            padding: 10px !important;
+            color: #000000 !important;
+            width: 100% !important;
+        }
+        div[data-testid="stHorizontalBlock"] button:hover {
+            color: #3d3d3d !important;
+            background: none !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# Navigation links
+st.sidebar.markdown("""
+<div class="nav-section">Uploading</div>
+""", unsafe_allow_html=True)
+if st.sidebar.button("Uploading data", key="upload_btn"):
+    change_page("Uploading data")
+
+st.sidebar.markdown("""
+<div class="nav-section">Doublet</div>
+""", unsafe_allow_html=True)
+if st.sidebar.button("Sorting the data", key="sort_btn"):
+    change_page("Sorting the data")
+if st.sidebar.button("Visualization of links", key="vis_btn"):
+    change_page("Visualization of links")
+
+st.sidebar.markdown("""
+<div class="nav-section">Triplet</div>
+""", unsafe_allow_html=True)
+
+# --- Shared state via session_state ---
+if "dataframe_buffer" not in st.session_state:
+    st.session_state.dataframe_buffer = None
+if "uploaded_file_info" not in st.session_state:
+    st.session_state.uploaded_file_info = None
+
+# --- Page Content ---
+# Home Page
+if st.session_state.current_page == "Home":
+    st.markdown("""
+    <style>
+        .home-content {
+            max-width: 800px;
+            margin: 40px auto;
+            text-align: center;
+            color: #F5F5F5;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .github-icon {
+            margin-top: 50px;
+            transition: transform 0.2s;
+        }
+        .github-icon:hover {
+            transform: scale(1.1);
+        }
+    </style>
+    
+    <div class="home-content">
+        <p>GUI methods from the DeepCore and DeepVisual libraries. DeepVC (Deep Visual Core) is distributed under the license of The Unlicense, developed by Deep.Foundation and serves as an intuitive tool for data management and visualization</p>
+        <a href="https://github.com/deep-foundation" target="_blank">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/a/ae/Github-desktop-logo-symbol.svg" width="48" class="github-icon"/>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Upload Page
+elif st.session_state.current_page == "Uploading data":
+    st.markdown("<h1 class='page-title'>Upload your CSV file</h1>", unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv", key="file_uploader")
+    
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            st.session_state.dataframe_buffer = df.to_csv(index=False)
+            st.session_state.uploaded_file_info = {
+                "name": uploaded_file.name,
+                "size": uploaded_file.size
+            }
+            st.success("File loaded successfully!")
+        except Exception as e:
+            st.error(f"Error loading file: {e}")
+    
+    if st.session_state.uploaded_file_info:
+        st.markdown(f"""
+        <div class="upload-info-box">
+            <strong>Uploaded file:</strong> {st.session_state.uploaded_file_info['name']}<br>
+            <strong>Size:</strong> {st.session_state.uploaded_file_info['size']} bytes
+        </div>
+        """, unsafe_allow_html=True)
+        
+        try:
+            df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
+            st.write("Preview (first 5 rows):")
+            st.dataframe(df.head())
+        except Exception as e:
+            st.error(f"Error displaying data: {e}")
+
+# Sorting Page
+elif st.session_state.current_page == "Sorting the data":
+    st.markdown("<h1 class='page-title'>Sorting the Data</h1>", unsafe_allow_html=True)
+
+    if st.session_state.dataframe_buffer is None:
+        st.warning("Please upload data first.")
+    else:
+        df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
+
+        if st.button("Process Data"):
+            try:
+                sorted_df = sort_duoblet(df)
+                st.session_state.dataframe_buffer = sorted_df.to_csv(index=False)
+                st.success("Data processed successfully!")
+                st.dataframe(sorted_df.head())
+            except Exception as e:
+                st.error(f"Error processing data: {e}")
+
+        st.download_button(
+            "Download Processed CSV",
+            data=st.session_state.dataframe_buffer,
+            file_name="processed.csv",
+            mime="text/csv"
+        )
+
+# Visualization Page
+elif st.session_state.current_page == "Visualization of links":
+    st.markdown("<h1 class='page-title'>Visualization of Links</h1>", unsafe_allow_html=True)
+
+    if st.session_state.dataframe_buffer is None:
+        st.warning("Please upload and process data first.")
+    else:
+        df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
+
+        loop_color = st.color_picker("Loop Color", "#FFA500")
+        edge_color = st.color_picker("Edge Color", "#000000")
+        inter_edge_color = st.color_picker("Inter Edge Color", "#0000FF")
+        background_color = st.color_picker("Background Color", "#FFFFFF")
+        title = st.text_input("Visualization Title", "")
+        color_title = st.color_picker("Title Color", "#000000")
+
+        # Контейнеры для визуализации и кнопки скачивания
+        viz_placeholder = st.empty()
+        download_placeholder = st.empty()
+
+        if st.button("Generate Visualization"):
+            try:
+                # Создаем новую фигуру
+                plt.figure(figsize=(10, 8))
+                
+                # Вызываем функцию визуализации (без параметра ax)
+                visualize_link_doublet(
+                    df,
+                    loop_color=loop_color,
+                    edge_color=edge_color,
+                    inter_edge_color=inter_edge_color,
+                    background_color=background_color,
+                    title=title,
+                    color_title=color_title
+                )
+                
+                # Получаем текущую активную фигуру
+                fig = plt.gcf()
+                
+                # Отображаем визуализацию
+                viz_placeholder.pyplot(fig)
+                
+                # Сохраняем в буфер для скачивания
+                buf = io.BytesIO()
+                fig.savefig(buf, format='png', bbox_inches='tight', dpi=300)
+                buf.seek(0)
+                
+                # Добавляем кнопку скачивания
+                download_placeholder.download_button(
+                    "Download PNG",
+                    data=buf,
+                    file_name="visualization.png",
+                    mime="image/png"
+                )
+                
+                plt.close(fig)  # Закрываем фигуру
+                
+            except Exception as e:
+                st.error(f"Visualization error: {str(e)}")
