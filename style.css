@@ -103,3 +103,16 @@ a.nav-link:hover {
     top: auto !important;
     left: auto !important;
 }
+
+.home-content {
+    max-width: 800px;
+    margin: 40px auto;
+    text-align: center;
+    color: #000000; /* Изменено с #F5F5F5 на #000000 (черный) */
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: #2c2c2c; /* Добавлен белый фон */
+    padding: 20px; /* Добавлены отступы */
+    border-radius: 10px; /* Закругленные углы */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Легкая тень для глубины */
+}
