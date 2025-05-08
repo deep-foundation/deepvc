@@ -1,11 +1,9 @@
-/* Base page styles */
 body {
     background-color: #2e3436;
     color: #F5F5F5;
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Sidebar */
 [data-testid="stSidebar"] {
     background-color: #ffffff;
     border-right: 1px solid #cccccc;
@@ -50,7 +48,6 @@ a.nav-link:hover {
     border-radius: 5px;
 }
 
-/* Headings */
 .page-title {
     font-size: 28px;
     font-weight: bold;
@@ -58,18 +55,15 @@ a.nav-link:hover {
     margin-bottom: 20px;
 }
 
-/* Dataframe table */
 [data-testid="stDataFrame"] {
     border-radius: 10px;
     overflow: hidden;
 }
 
-/* Remove default radio button styles */
 .css-1r6slb0, .css-1n76uvr {
     display: none !important;
 }
 
-/* Style navigation buttons to look like links */
 .stSidebar button {
     background: none !important;
     border: none !important;
@@ -89,22 +83,19 @@ a.nav-link:hover {
     border-radius: 5px !important;
 }
 
-/* Стиль для блока информации о файле */
 .upload-info-box {
     margin: 10px 0;
     padding: 10px;
-    background-color: #3d4144 !important;  /* Темно-серый цвет */
+    background-color: #3d4144 !important;
     border-radius: 5px;
     color: #ffffff !important;
     border: 1px solid #5a5e62;
 }
 
-/* Цвет текста в блоке информации */
 .upload-info-box strong {
-    color: #bdbdbd !important;  /* серый для заголовков */
+    color: #bdbdbd !important;
 }
 
-/* Фиксируем кнопку скрытия панели (оставляя оригинальный дизайн) */
 [data-testid="stSidebarCollapseButton"] {
     visibility: visible !important;
     opacity: 1 !important;

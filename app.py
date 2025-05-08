@@ -6,19 +6,19 @@ from deepvisual import visualize_link_doublet
 import matplotlib.pyplot as plt
 import io
 
-# --- Set page config ---
+# --- set page config ---
 st.set_page_config(
     page_title="DeepVC",
     layout="wide",
     page_icon="img/logo/logo.png"
 )
 
-# --- Inject custom CSS ---
+# --- inject custom CSS ---
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# --- Navigation control ---
-# Define pages in your app
+# --- navigation control ---
+# define pages in your app
 PAGES = {
     "Home": "Home",
     "Uploading data": "Uploading data",
@@ -26,18 +26,17 @@ PAGES = {
     "Visualization of links": "Visualization of links"
 }
 
-# Initialize session state for page navigation and file info
+# initialize session state for page navigation and file info
 if 'current_page' not in st.session_state:
     st.session_state.current_page = "Home"
 if 'file_info' not in st.session_state:
     st.session_state.file_info = None
 
-# Function to change page
+# function to change page
 def change_page(page):
     st.session_state.current_page = page
 
-# --- Sidebar Navigation ---
-# Добавьте этот стиль в начало сайдбара
+# --- sidebar Navigation ---
 st.sidebar.markdown("""
 <style>
     .fake-title {
@@ -57,7 +56,6 @@ st.sidebar.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Создаем невидимую кнопку и стилизуем ее как заголовок
 col1, col2, col3 = st.sidebar.columns([1,6,1])
 with col2:
     if st.button("DeepVC", key="main_title"):
@@ -82,7 +80,7 @@ with col2:
     """, unsafe_allow_html=True)
 
 
-# Navigation links
+# navigation links
 st.sidebar.markdown("""
 <div class="nav-section">Uploading</div>
 """, unsafe_allow_html=True)
@@ -101,14 +99,14 @@ st.sidebar.markdown("""
 <div class="nav-section">Triplet</div>
 """, unsafe_allow_html=True)
 
-# --- Shared state via session_state ---
+# --- shared state via session_state ---
 if "dataframe_buffer" not in st.session_state:
     st.session_state.dataframe_buffer = None
 if "uploaded_file_info" not in st.session_state:
     st.session_state.uploaded_file_info = None
 
-# --- Page Content ---
-# Home Page
+# --- page Content ---
+# home Page
 if st.session_state.current_page == "Home":
     st.markdown("""
     <style>
@@ -137,7 +135,7 @@ if st.session_state.current_page == "Home":
     </div>
     """, unsafe_allow_html=True)
 
-# Upload Page
+# upload Page
 elif st.session_state.current_page == "Uploading data":
     st.markdown("<h1 class='page-title'>Upload your CSV file</h1>", unsafe_allow_html=True)
 
@@ -170,7 +168,7 @@ elif st.session_state.current_page == "Uploading data":
         except Exception as e:
             st.error(f"Error displaying data: {e}")
 
-# Sorting Page
+# sorting Page
 elif st.session_state.current_page == "Sorting the data":
     st.markdown("<h1 class='page-title'>Sorting the Data</h1>", unsafe_allow_html=True)
 
@@ -195,7 +193,7 @@ elif st.session_state.current_page == "Sorting the data":
             mime="text/csv"
         )
 
-# Visualization Page
+# visualization Page
 elif st.session_state.current_page == "Visualization of links":
     st.markdown("<h1 class='page-title'>Visualization of Links</h1>", unsafe_allow_html=True)
 
@@ -211,16 +209,13 @@ elif st.session_state.current_page == "Visualization of links":
         title = st.text_input("Visualization Title", "")
         color_title = st.color_picker("Title Color", "#000000")
 
-        # Контейнеры для визуализации и кнопки скачивания
         viz_placeholder = st.empty()
         download_placeholder = st.empty()
 
         if st.button("Generate Visualization"):
             try:
-                # Создаем новую фигуру
                 plt.figure(figsize=(10, 8))
                 
-                # Вызываем функцию визуализации (без параметра ax)
                 visualize_link_doublet(
                     df,
                     loop_color=loop_color,
@@ -231,18 +226,14 @@ elif st.session_state.current_page == "Visualization of links":
                     color_title=color_title
                 )
                 
-                # Получаем текущую активную фигуру
                 fig = plt.gcf()
                 
-                # Отображаем визуализацию
                 viz_placeholder.pyplot(fig)
                 
-                # Сохраняем в буфер для скачивания
                 buf = io.BytesIO()
                 fig.savefig(buf, format='png', bbox_inches='tight', dpi=300)
                 buf.seek(0)
                 
-                # Добавляем кнопку скачивания
                 download_placeholder.download_button(
                     "Download PNG",
                     data=buf,
@@ -250,7 +241,7 @@ elif st.session_state.current_page == "Visualization of links":
                     mime="image/png"
                 )
                 
-                plt.close(fig)  # Закрываем фигуру
+                plt.close(fig)
                 
             except Exception as e:
                 st.error(f"Visualization error: {str(e)}")
