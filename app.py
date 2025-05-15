@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 from deepcore import sort_duoblet
 from deepvisual import visualize_link_doublet
+from deepcore import cluster_links
 import matplotlib.pyplot as plt
 import io
 
@@ -18,12 +19,13 @@ with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # --- navigation control ---
-# define pages in your app
+# define pages in app
 PAGES = {
     "Home": "Home",
     "Uploading data": "Uploading data",
     "Sorting the data": "Sorting the data",
-    "Visualization of links": "Visualization of links"
+    "Visualization of links": "Visualization of links",
+    "Link clustering": "Link clustering"
 }
 
 # initialize session state for page navigation and file info
@@ -94,6 +96,8 @@ if st.sidebar.button("Sorting the data", key="sort_btn"):
     change_page("Sorting the data")
 if st.sidebar.button("Visualization of links", key="vis_btn"):
     change_page("Visualization of links")
+if st.sidebar.button("Link clustering", key="cluster_btn"):
+    change_page("Link clustering")
 
 st.sidebar.markdown("""
 <div class="nav-section">Triplet</div>
@@ -135,7 +139,7 @@ if st.session_state.current_page == "Home":
     </div>
     """, unsafe_allow_html=True)
 
-# upload Page
+# upload page
 elif st.session_state.current_page == "Uploading data":
     st.markdown("<h1 class='page-title'>Upload your CSV file</h1>", unsafe_allow_html=True)
 
@@ -147,7 +151,8 @@ elif st.session_state.current_page == "Uploading data":
             st.session_state.dataframe_buffer = df.to_csv(index=False)
             st.session_state.uploaded_file_info = {
                 "name": uploaded_file.name,
-                "size": uploaded_file.size
+                "size": uploaded_file.size,
+                "rows": len(df)  # Сохраняем количество строк в session_state
             }
             st.success("File loaded successfully!")
         except Exception as e:
@@ -157,14 +162,17 @@ elif st.session_state.current_page == "Uploading data":
         st.markdown(f"""
         <div class="upload-info-box">
             <strong>Uploaded file:</strong> {st.session_state.uploaded_file_info['name']}<br>
-            <strong>Size:</strong> {st.session_state.uploaded_file_info['size']} bytes
+            <strong>Size:</strong> {st.session_state.uploaded_file_info['size']} bytes<br>
+            <strong>Rows:</strong> {st.session_state.uploaded_file_info.get('rows', 'N/A')}
         </div>
         """, unsafe_allow_html=True)
         
         try:
-            df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
-            st.write("Preview (first 5 rows):")
-            st.dataframe(df.head())
+            # Используем dataframe_buffer вместо переменной df
+            if st.session_state.dataframe_buffer:
+                df_preview = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
+                st.write("Preview (first 5 rows):")
+                st.dataframe(df_preview.head())
         except Exception as e:
             st.error(f"Error displaying data: {e}")
 
@@ -245,3 +253,36 @@ elif st.session_state.current_page == "Visualization of links":
                 
             except Exception as e:
                 st.error(f"Visualization error: {str(e)}")
+
+# link clustering page
+elif st.session_state.current_page == "Link clustering":
+    st.markdown("<h1 class='page-title'>Link Clustering</h1>", unsafe_allow_html=True)
+
+    if st.session_state.dataframe_buffer is None:
+        st.warning("Please upload data first.")
+    else:
+        df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
+
+        if st.button("Cluster Links"):
+            try:
+                clusters = cluster_links(df)
+                
+                # Convert clusters to a DataFrame for display
+                clusters_df = pd.DataFrame.from_dict(clusters, orient='index', columns=['Cluster ID'])
+                clusters_df.index.name = 'Link'
+                
+                st.success("Links clustered successfully!")
+                st.write("Cluster assignments:")
+                st.dataframe(clusters_df)
+                
+                # Add download button
+                clusters_csv = clusters_df.reset_index().to_csv(index=False)
+                st.download_button(
+                    "Download Cluster Assignments",
+                    data=clusters_csv,
+                    file_name="cluster_assignments.csv",
+                    mime="text/csv"
+                )
+                
+            except Exception as e:
+                st.error(f"Error clustering links: {e}")
