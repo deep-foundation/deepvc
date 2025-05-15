@@ -6,6 +6,7 @@ from deepvisual import visualize_link_doublet
 from deepcore import cluster_links
 import matplotlib.pyplot as plt
 import io
+from deepvisual import visualize_link_doublet_cluster
 
 # --- set page config ---
 st.set_page_config(
@@ -25,6 +26,7 @@ PAGES = {
     "Uploading data": "Uploading data",
     "Sorting the data": "Sorting the data",
     "Visualization of links": "Visualization of links",
+    "Visualizing link clustering": "Visualizing link clustering",
     "Link clustering": "Link clustering"
 }
 
@@ -96,6 +98,8 @@ if st.sidebar.button("Sorting the data", key="sort_btn"):
     change_page("Sorting the data")
 if st.sidebar.button("Visualization of links", key="vis_btn"):
     change_page("Visualization of links")
+if st.sidebar.button("Visualizing link clustering", key="vis_cluster_btn"):  # Added new button
+    change_page("Visualizing link clustering")
 if st.sidebar.button("Link clustering", key="cluster_btn"):
     change_page("Link clustering")
 
@@ -201,7 +205,7 @@ elif st.session_state.current_page == "Sorting the data":
             mime="text/csv"
         )
 
-# visualization Page
+# visualization page
 elif st.session_state.current_page == "Visualization of links":
     st.markdown("<h1 class='page-title'>Visualization of Links</h1>", unsafe_allow_html=True)
 
@@ -246,6 +250,53 @@ elif st.session_state.current_page == "Visualization of links":
                     "Download PNG",
                     data=buf,
                     file_name="visualization.png",
+                    mime="image/png"
+                )
+                
+                plt.close(fig)
+                
+            except Exception as e:
+                st.error(f"Visualization error: {str(e)}")
+
+# visualizing link clustering page
+elif st.session_state.current_page == "Visualizing link clustering":
+    st.markdown("<h1 class='page-title'>Visualizing Link Clustering</h1>", unsafe_allow_html=True)
+
+    if st.session_state.dataframe_buffer is None:
+        st.warning("Please upload and process data first.")
+    else:
+        df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
+
+        background_color = st.color_picker("Background Color", "#FFFFFF")
+        color_title = st.color_picker("Title Color", "#000000")
+        title = st.text_input("Visualization Title", "")
+        
+        viz_placeholder = st.empty()
+        download_placeholder = st.empty()
+
+        if st.button("Generate Clustering Visualization"):
+            try:
+                plt.figure(figsize=(12, 8))
+                
+                visualize_link_doublet_cluster(
+                    df,
+                    background_color=background_color,
+                    title=title,
+                    color_title=color_title
+                )
+                
+                fig = plt.gcf()
+                
+                viz_placeholder.pyplot(fig)
+                
+                buf = io.BytesIO()
+                fig.savefig(buf, format='png', bbox_inches='tight', dpi=300)
+                buf.seek(0)
+                
+                download_placeholder.download_button(
+                    "Download PNG",
+                    data=buf,
+                    file_name="clustering_visualization.png",
                     mime="image/png"
                 )
                 
