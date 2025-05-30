@@ -7,6 +7,7 @@ from deepcore import cluster_links
 import matplotlib.pyplot as plt
 import io
 from deepvisual import visualize_link_doublet_cluster
+import re  
 
 # --- set page config ---
 st.set_page_config(
@@ -83,7 +84,6 @@ with col2:
     </style>
     """, unsafe_allow_html=True)
 
-
 # navigation links
 st.sidebar.markdown("""
 <div class="nav-section">Uploading</div>
@@ -98,7 +98,7 @@ if st.sidebar.button("Sorting the data", key="sort_btn"):
     change_page("Sorting the data")
 if st.sidebar.button("Visualization of links", key="vis_btn"):
     change_page("Visualization of links")
-if st.sidebar.button("Visualizing link clustering", key="vis_cluster_btn"):  # Added new button
+if st.sidebar.button("Visualizing link clustering", key="vis_cluster_btn"):
     change_page("Visualizing link clustering")
 if st.sidebar.button("Link clustering", key="cluster_btn"):
     change_page("Link clustering")
@@ -113,7 +113,25 @@ if "dataframe_buffer" not in st.session_state:
 if "uploaded_file_info" not in st.session_state:
     st.session_state.uploaded_file_info = None
 
-# --- page Content ---
+def process_txt_content(content):
+    """Обработка содержимого TXT файла и преобразование в DataFrame"""
+    lines = content.split('\n')
+    
+    # (id: from to)
+    pattern = re.compile(r'^\((\d+):\s*(\d+)\s+(\d+)\)$')
+
+    # (final states)
+    links = [
+        (int(from_), int(to))
+        for line in lines
+        if (match := pattern.match(line.strip()))
+        for _, from_, to in [match.groups()]
+    ]
+
+    # to dataframe
+    return pd.DataFrame(links, columns=['from', 'to'])
+
+# --- page content ---
 # home Page
 if st.session_state.current_page == "Home":
     st.markdown("""
@@ -145,18 +163,28 @@ if st.session_state.current_page == "Home":
 
 # upload page
 elif st.session_state.current_page == "Uploading data":
-    st.markdown("<h1 class='page-title'>Upload your CSV file</h1>", unsafe_allow_html=True)
-
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv", key="file_uploader")
+    st.markdown("<h1 class='page-title'>Upload your data file</h1>", unsafe_allow_html=True)
+    
+    file_type = st.radio("Select file type:", ("CSV", "TXT"), horizontal=True)
+    
+    if file_type == "CSV":
+        uploaded_file = st.file_uploader("Choose a CSV file", type="csv", key="csv_uploader")
+    else:
+        uploaded_file = st.file_uploader("Choose a TXT file", type="txt", key="txt_uploader")
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file)
+            if file_type == "CSV":
+                df = pd.read_csv(uploaded_file)
+            else:
+                content = uploaded_file.getvalue().decode("utf-8")
+                df = process_txt_content(content)
+            
             st.session_state.dataframe_buffer = df.to_csv(index=False)
             st.session_state.uploaded_file_info = {
                 "name": uploaded_file.name,
                 "size": uploaded_file.size,
-                "rows": len(df)  # Сохраняем количество строк в session_state
+                "rows": len(df)
             }
             st.success("File loaded successfully!")
         except Exception as e:
@@ -172,7 +200,6 @@ elif st.session_state.current_page == "Uploading data":
         """, unsafe_allow_html=True)
         
         try:
-            # Используем dataframe_buffer вместо переменной df
             if st.session_state.dataframe_buffer:
                 df_preview = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
                 st.write("Preview (first 5 rows):")
@@ -180,7 +207,6 @@ elif st.session_state.current_page == "Uploading data":
         except Exception as e:
             st.error(f"Error displaying data: {e}")
 
-# sorting Page
 elif st.session_state.current_page == "Sorting the data":
     st.markdown("<h1 class='page-title'>Sorting the Data</h1>", unsafe_allow_html=True)
 
