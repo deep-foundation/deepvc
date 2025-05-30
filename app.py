@@ -131,6 +131,17 @@ def process_txt_content(content):
     # to dataframe
     return pd.DataFrame(links, columns=['from', 'to'])
 
+def process_lino_content(content):
+    lines = content.split('\n')
+    pattern = re.compile(r"\(\d+:\s*(\d+)\s+(\d+)\)")
+    data = [
+        (int(src), int(tgt))
+        for line in lines
+        if (match := pattern.match(line.strip()))
+        for src, tgt in [match.groups()]
+    ]
+    return pd.DataFrame(data, columns=["from", "to"])
+
 # --- page content ---
 # home Page
 if st.session_state.current_page == "Home":
@@ -165,21 +176,25 @@ if st.session_state.current_page == "Home":
 elif st.session_state.current_page == "Uploading data":
     st.markdown("<h1 class='page-title'>Upload your data file</h1>", unsafe_allow_html=True)
     
-    file_type = st.radio("Select file type:", ("CSV", "TXT"), horizontal=True)
+    file_type = st.radio("Select file type:", ("CSV", "TXT", "LINO"), horizontal=True)
     
     if file_type == "CSV":
-        uploaded_file = st.file_uploader("Choose a CSV file", type="csv", key="csv_uploader")
+        uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"], key="csv_uploader")
+    elif file_type == "TXT":
+        uploaded_file = st.file_uploader("Choose a TXT file", type=["txt"], key="txt_uploader")
     else:
-        uploaded_file = st.file_uploader("Choose a TXT file", type="txt", key="txt_uploader")
-    
+        uploaded_file = st.file_uploader("Choose a LINO file", type=["lino"], key="lino_uploader")
     if uploaded_file is not None:
         try:
             if file_type == "CSV":
                 df = pd.read_csv(uploaded_file)
-            else:
+            elif file_type == "TXT":
                 content = uploaded_file.getvalue().decode("utf-8")
                 df = process_txt_content(content)
-            
+            else:
+                content = uploaded_file.getvalue().decode("utf-8")
+                df = process_lino_content(content)
+        
             st.session_state.dataframe_buffer = df.to_csv(index=False)
             st.session_state.uploaded_file_info = {
                 "name": uploaded_file.name,
@@ -344,7 +359,6 @@ elif st.session_state.current_page == "Link clustering":
             try:
                 clusters = cluster_links(df)
                 
-                # Convert clusters to a DataFrame for display
                 clusters_df = pd.DataFrame.from_dict(clusters, orient='index', columns=['Cluster ID'])
                 clusters_df.index.name = 'Link'
                 
@@ -352,7 +366,6 @@ elif st.session_state.current_page == "Link clustering":
                 st.write("Cluster assignments:")
                 st.dataframe(clusters_df)
                 
-                # Add download button
                 clusters_csv = clusters_df.reset_index().to_csv(index=False)
                 st.download_button(
                     "Download Cluster Assignments",
