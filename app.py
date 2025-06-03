@@ -239,12 +239,32 @@ elif st.session_state.current_page == "Sorting the data":
             except Exception as e:
                 st.error(f"Error processing data: {e}")
 
-        st.download_button(
-            "Download Processed CSV",
-            data=st.session_state.dataframe_buffer,
-            file_name="processed.csv",
-            mime="text/csv"
-        )
+        # download buttons for different formats
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.download_button(
+                "Download Processed CSV",
+                data=st.session_state.dataframe_buffer,
+                file_name="processed.csv",
+                mime="text/csv"
+            )
+        
+        with col2:
+            st.download_button(
+                "Download Processed LINO",
+                data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in df.iterrows()]),
+                file_name="processed.lino",
+                mime="text/plain"
+            )
+        
+        with col3:
+            st.download_button(
+                "Download Processed TXT",
+                data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in df.iterrows()]),
+                file_name="processed.txt",
+                mime="text/plain"
+            )
 
 # visualization page
 elif st.session_state.current_page == "Visualization of links":
