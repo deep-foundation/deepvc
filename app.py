@@ -275,19 +275,47 @@ elif st.session_state.current_page == "Visualization of links":
     else:
         df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
 
-        loop_color = st.color_picker("Loop Color", "#FFA500")
-        edge_color = st.color_picker("Edge Color", "#000000")
-        inter_edge_color = st.color_picker("Inter Edge Color", "#0000FF")
-        background_color = st.color_picker("Background Color", "#FFFFFF")
+        col1, col2 = st.columns(2)
+        with col1:
+            loop_color = st.color_picker("Loop Color", "#FFA500")
+            edge_color = st.color_picker("Edge Color", "#000000")
+        with col2:
+            inter_edge_color = st.color_picker("Inter Edge Color", "#0000FF")
+            background_color = st.color_picker("Background Color", "#FFFFFF")
+
         title = st.text_input("Visualization Title", "")
         color_title = st.color_picker("Title Color", "#000000")
+        
+        st.markdown("**Figure Size (inches)**")
+        fig_col1, fig_col2 = st.columns(2)
+        with fig_col1:
+            fig_width = st.number_input(
+                "Width", 
+                min_value=5.0, 
+                max_value=20.0, 
+                value=12.0, 
+                step=0.5,
+                help="Width of the figure in inches"
+            )
+        with fig_col2:
+            fig_height = st.number_input(
+                "Height", 
+                min_value=5.0, 
+                max_value=20.0, 
+                value=8.0, 
+                step=0.5,
+                help="Height of the figure in inches"
+            )
+        figsize = (fig_width, fig_height)
+        
+        show_labels = st.checkbox("Show Labels", value=True)
 
         viz_placeholder = st.empty()
         download_placeholder = st.empty()
 
         if st.button("Generate Visualization"):
             try:
-                plt.figure(figsize=(10, 8))
+                plt.figure(figsize=figsize)
                 
                 visualize_link_doublet(
                     df,
@@ -296,11 +324,12 @@ elif st.session_state.current_page == "Visualization of links":
                     inter_edge_color=inter_edge_color,
                     background_color=background_color,
                     title=title,
-                    color_title=color_title
+                    color_title=color_title,
+                    show_labels=show_labels,
+                    figsize=figsize
                 )
                 
                 fig = plt.gcf()
-                
                 viz_placeholder.pyplot(fig)
                 
                 buf = io.BytesIO()
