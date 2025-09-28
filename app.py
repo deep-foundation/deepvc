@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
-from deepcore import sort_duoblet
+from deepcore import sort_duoblet, adjacency_to_links, links_to_adjacency
 from deepvisual import visualize_link_doublet
 from deepcore import cluster_links
 import matplotlib.pyplot as plt
 import io
 from deepvisual import visualize_link_doublet_cluster
-import re  
+import re
+import numpy as np  
 
 # --- set page config ---
 st.set_page_config(
@@ -28,7 +29,9 @@ PAGES = {
     "Sorting the data": "Sorting the data",
     "Visualization of links": "Visualization of links",
     "Visualizing link clustering": "Visualizing link clustering",
-    "Link clustering": "Link clustering"
+    "Link clustering": "Link clustering",
+    "Adjacency Matrix to Links": "Adjacency Matrix to Links",
+    "Links to Adjacency Matrix": "Links to Adjacency Matrix"
 }
 
 # initialize session state for page navigation and file info
@@ -106,6 +109,14 @@ if st.sidebar.button("Link clustering", key="cluster_btn"):
 st.sidebar.markdown("""
 <div class="nav-section">Triplet</div>
 """, unsafe_allow_html=True)
+
+st.sidebar.markdown("""
+<div class="nav-section">Matrix</div>
+""", unsafe_allow_html=True)
+if st.sidebar.button("Adjacency Matrix to Links", key="adj_to_links_btn"):
+    change_page("Adjacency Matrix to Links")
+if st.sidebar.button("Links to Adjacency Matrix", key="links_to_adj_btn"):
+    change_page("Links to Adjacency Matrix")
 
 # --- shared state via session_state ---
 if "dataframe_buffer" not in st.session_state:
@@ -425,3 +436,117 @@ elif st.session_state.current_page == "Link clustering":
                 
             except Exception as e:
                 st.error(f"Error clustering links: {e}")
+
+elif st.session_state.current_page == "Adjacency Matrix to Links":
+    st.markdown("<h1 class='page-title'>Adjacency Matrix to Links</h1>", unsafe_allow_html=True)
+
+    st.markdown("Upload an adjacency matrix file (CSV format)")
+
+    uploaded_file = st.file_uploader("Choose a CSV file with adjacency matrix", type=["csv"], key="adj_matrix_uploader")
+
+    include_zeros = st.checkbox("Include zero-weight links", value=False)
+
+    if uploaded_file is not None:
+        try:
+            adj_matrix_df = pd.read_csv(uploaded_file, index_col=0)
+
+            st.write("Uploaded Adjacency Matrix:")
+            st.dataframe(adj_matrix_df)
+
+            if st.button("Convert to Links"):
+                try:
+                    links_df = adjacency_to_links(adj_matrix_df, include_zeros=include_zeros)
+
+                    st.success("Conversion successful!")
+                    st.write("Result (Links):")
+                    st.dataframe(links_df)
+
+                    links_csv = links_df.to_csv(index=False)
+
+                    col1, col2, col3 = st.columns(3)
+
+                    with col1:
+                        st.download_button(
+                            "Download CSV",
+                            data=links_csv,
+                            file_name="links.csv",
+                            mime="text/csv"
+                        )
+
+                    with col2:
+                        st.download_button(
+                            "Download LINO",
+                            data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_df.iterrows()]),
+                            file_name="links.lino",
+                            mime="text/plain"
+                        )
+
+                    with col3:
+                        st.download_button(
+                            "Download TXT",
+                            data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_df.iterrows()]),
+                            file_name="links.txt",
+                            mime="text/plain"
+                        )
+
+                except Exception as e:
+                    st.error(f"Error converting matrix to links: {e}")
+        except Exception as e:
+            st.error(f"Error loading file: {e}")
+
+elif st.session_state.current_page == "Links to Adjacency Matrix":
+    st.markdown("<h1 class='page-title'>Links to Adjacency Matrix</h1>", unsafe_allow_html=True)
+
+    if st.session_state.dataframe_buffer is None:
+        st.warning("Please upload data first in 'Uploading data' page.")
+    else:
+        df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
+
+        st.write("Uploaded Links:")
+        st.dataframe(df.head())
+
+        weight_column = None
+        if len(df.columns) > 2:
+            use_weights = st.checkbox("Use weight column", value=False)
+            if use_weights:
+                weight_column = st.selectbox("Select weight column:", [col for col in df.columns if col not in ['from', 'to']])
+
+        if st.button("Convert to Adjacency Matrix"):
+            try:
+                adj_matrix_df = links_to_adjacency(df, weight_column=weight_column)
+
+                st.success("Conversion successful!")
+                st.write("Result (Adjacency Matrix):")
+                st.dataframe(adj_matrix_df)
+
+                adj_matrix_csv = adj_matrix_df.to_csv()
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.download_button(
+                        "Download CSV",
+                        data=adj_matrix_csv,
+                        file_name="adjacency_matrix.csv",
+                        mime="text/csv"
+                    )
+
+                with col2:
+                    links_from_matrix = adjacency_to_links(adj_matrix_df, include_zeros=False)
+                    st.download_button(
+                        "Download LINO",
+                        data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_from_matrix.iterrows()]),
+                        file_name="adjacency_matrix.lino",
+                        mime="text/plain"
+                    )
+
+                with col3:
+                    st.download_button(
+                        "Download TXT",
+                        data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_from_matrix.iterrows()]),
+                        file_name="adjacency_matrix.txt",
+                        mime="text/plain"
+                    )
+
+            except Exception as e:
+                st.error(f"Error converting links to matrix: {e}")
