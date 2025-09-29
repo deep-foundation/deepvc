@@ -15,39 +15,6 @@ A powerful Python library and web application for working with associative link 
 - **Interactive Web UI**: Streamlit-based interface for easy data exploration and analysis
 - **Multiple Export Formats**: Export results to CSV, TXT, and LINO formats
 
-## Quick Start
-
-### Web Application
-
-Visit the live demo: [https://deepvc.streamlit.app/](https://deepvc.streamlit.app/)
-
-### Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-### Usage
-
-Run the Streamlit app locally:
-```bash
-streamlit run app.py
-```
-
-## Core Functions
-
-### Data Processing
-- `sort_duoblet(df)`: Sort link data by closed links and relationships
-- `cluster_links(df)`: Cluster links using Louvain algorithm
-
-### Matrix Conversion
-- `adjacency_to_links(matrix, node_labels, include_zeros)`: Convert adjacency matrix to link format
-- `links_to_adjacency(df, weight_column)`: Convert links to adjacency matrix
-
-### Visualization
-- `visualize_link_doublet(df, ...)`: Visualize doublet link structures
-- `visualize_link_doublet_cluster(df, ...)`: Visualize with clustering
-
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+Unlicense
