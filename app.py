@@ -19,7 +19,61 @@ st.set_page_config(
 
 # --- inject custom CSS ---
 with open("style.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    base_css = f.read()
+
+# Add dark mode CSS if enabled
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+if st.session_state.dark_mode:
+    dark_mode_css = """
+    body {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+    }
+    .page-title {
+        color: #e0e0e0 !important;
+    }
+    .upload-info-box {
+        background-color: #2c2c2c !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #444444 !important;
+    }
+    .upload-info-box strong {
+        color: #ffffff !important;
+    }
+    [data-testid="stDataFrame"] {
+        background-color: #2c2c2c !important;
+    }
+    .home-content {
+        background-color: #2c2c2c !important;
+        color: #e0e0e0 !important;
+    }
+    """
+    st.markdown(f"<style>{base_css}\n{dark_mode_css}</style>", unsafe_allow_html=True)
+else:
+    light_mode_css = """
+    body {
+        background-color: #ffffff !important;
+        color: #2e3436 !important;
+    }
+    .page-title {
+        color: #2e3436 !important;
+    }
+    .upload-info-box {
+        background-color: #f0f0f0 !important;
+        color: #2e3436 !important;
+        border: 1px solid #cccccc !important;
+    }
+    .upload-info-box strong {
+        color: #000000 !important;
+    }
+    .home-content {
+        background-color: #f8f8f8 !important;
+        color: #2e3436 !important;
+    }
+    """
+    st.markdown(f"<style>{base_css}\n{light_mode_css}</style>", unsafe_allow_html=True)
 
 # --- navigation control ---
 # define pages in app
@@ -106,23 +160,22 @@ if st.sidebar.button("Visualizing link clustering", key="vis_cluster_btn"):
 if st.sidebar.button("Link clustering", key="cluster_btn"):
     change_page("Link clustering")
 
-st.sidebar.markdown("""
-<div class="nav-section">Triplet</div>
-""", unsafe_allow_html=True)
-
-st.sidebar.markdown("""
-<div class="nav-section">Matrix</div>
-""", unsafe_allow_html=True)
 if st.sidebar.button("Adjacency Matrix to Links", key="adj_to_links_btn"):
     change_page("Adjacency Matrix to Links")
 if st.sidebar.button("Links to Adjacency Matrix", key="links_to_adj_btn"):
     change_page("Links to Adjacency Matrix")
+
+st.sidebar.markdown("""
+<div class="nav-section">Triplet</div>
+""", unsafe_allow_html=True)
 
 # --- shared state via session_state ---
 if "dataframe_buffer" not in st.session_state:
     st.session_state.dataframe_buffer = None
 if "uploaded_file_info" not in st.session_state:
     st.session_state.uploaded_file_info = None
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
 
 def process_txt_content(content):
     """Обработка содержимого TXT файла и преобразование в DataFrame"""
@@ -153,9 +206,18 @@ def process_lino_content(content):
     ]
     return pd.DataFrame(data, columns=["from", "to"])
 
+# --- Theme Toggle Helper ---
+def add_theme_toggle():
+    col1, col2, col3 = st.columns([10, 1, 1])
+    with col3:
+        if st.button("🌙" if not st.session_state.dark_mode else "☀️", key=f"theme_toggle_{st.session_state.current_page}", help="Toggle dark/light mode"):
+            st.session_state.dark_mode = not st.session_state.dark_mode
+            st.rerun()
+
 # --- page content ---
 # home Page
 if st.session_state.current_page == "Home":
+    add_theme_toggle()
     st.markdown("""
     <style>
         .home-content {
@@ -185,6 +247,7 @@ if st.session_state.current_page == "Home":
 
 # upload page
 elif st.session_state.current_page == "Uploading data":
+    add_theme_toggle()
     st.markdown("<h1 class='page-title'>Upload your data file</h1>", unsafe_allow_html=True)
     
     file_type = st.radio("Select file type:", ("CSV", "TXT", "LINO"), horizontal=True)
@@ -229,11 +292,14 @@ elif st.session_state.current_page == "Uploading data":
             if st.session_state.dataframe_buffer:
                 df_preview = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
                 st.write("Preview (first 5 rows):")
-                st.dataframe(df_preview.head())
+                df_display = df_preview.head().copy()
+                df_display.index = range(1, len(df_display) + 1)
+                st.dataframe(df_display)
         except Exception as e:
             st.error(f"Error displaying data: {e}")
 
 elif st.session_state.current_page == "Sorting the data":
+    add_theme_toggle()
     st.markdown("<h1 class='page-title'>Sorting the Data</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -246,39 +312,40 @@ elif st.session_state.current_page == "Sorting the data":
                 sorted_df = sort_duoblet(df)
                 st.session_state.dataframe_buffer = sorted_df.to_csv(index=False)
                 st.success("Data processed successfully!")
-                st.dataframe(sorted_df.head())
+                df_display = sorted_df.head().copy()
+                df_display.index = range(1, len(df_display) + 1)
+                st.dataframe(df_display)
             except Exception as e:
                 st.error(f"Error processing data: {e}")
 
         # download buttons for different formats
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.download_button(
-                "Download Processed CSV",
-                data=st.session_state.dataframe_buffer,
-                file_name="processed.csv",
-                mime="text/csv"
-            )
-        
-        with col2:
-            st.download_button(
-                "Download Processed LINO",
-                data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in df.iterrows()]),
-                file_name="processed.lino",
-                mime="text/plain"
-            )
-        
-        with col3:
-            st.download_button(
-                "Download Processed TXT",
-                data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in df.iterrows()]),
-                file_name="processed.txt",
-                mime="text/plain"
-            )
+        st.download_button(
+            "📥 Download Processed CSV",
+            data=st.session_state.dataframe_buffer,
+            file_name="processed.csv",
+            mime="text/csv",
+            key="download_csv_sorting"
+        )
+
+        st.download_button(
+            "📥 Download Processed LINO",
+            data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in df.iterrows()]),
+            file_name="processed.lino",
+            mime="text/plain",
+            key="download_lino_sorting"
+        )
+
+        st.download_button(
+            "📥 Download Processed TXT",
+            data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in df.iterrows()]),
+            file_name="processed.txt",
+            mime="text/plain",
+            key="download_txt_sorting"
+        )
 
 # visualization page
 elif st.session_state.current_page == "Visualization of links":
+    add_theme_toggle()
     st.markdown("<h1 class='page-title'>Visualization of Links</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -348,7 +415,7 @@ elif st.session_state.current_page == "Visualization of links":
                 buf.seek(0)
                 
                 download_placeholder.download_button(
-                    "Download PNG",
+                    "📥 Download PNG",
                     data=buf,
                     file_name="visualization.png",
                     mime="image/png"
@@ -361,6 +428,7 @@ elif st.session_state.current_page == "Visualization of links":
 
 # visualizing link clustering page
 elif st.session_state.current_page == "Visualizing link clustering":
+    add_theme_toggle()
     st.markdown("<h1 class='page-title'>Visualizing Link Clustering</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -395,7 +463,7 @@ elif st.session_state.current_page == "Visualizing link clustering":
                 buf.seek(0)
                 
                 download_placeholder.download_button(
-                    "Download PNG",
+                    "📥 Download PNG",
                     data=buf,
                     file_name="clustering_visualization.png",
                     mime="image/png"
@@ -408,6 +476,7 @@ elif st.session_state.current_page == "Visualizing link clustering":
 
 # link clustering page
 elif st.session_state.current_page == "Link clustering":
+    add_theme_toggle()
     st.markdown("<h1 class='page-title'>Link Clustering</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -428,7 +497,7 @@ elif st.session_state.current_page == "Link clustering":
                 
                 clusters_csv = clusters_df.reset_index().to_csv(index=False)
                 st.download_button(
-                    "Download Cluster Assignments",
+                    "📥 Download Cluster Assignments",
                     data=clusters_csv,
                     file_name="cluster_assignments.csv",
                     mime="text/csv"
@@ -438,6 +507,7 @@ elif st.session_state.current_page == "Link clustering":
                 st.error(f"Error clustering links: {e}")
 
 elif st.session_state.current_page == "Adjacency Matrix to Links":
+    add_theme_toggle()
     st.markdown("<h1 class='page-title'>Adjacency Matrix to Links</h1>", unsafe_allow_html=True)
 
     st.markdown("Upload an adjacency matrix file (CSV format)")
@@ -451,7 +521,9 @@ elif st.session_state.current_page == "Adjacency Matrix to Links":
             adj_matrix_df = pd.read_csv(uploaded_file, index_col=0)
 
             st.write("Uploaded Adjacency Matrix:")
-            st.dataframe(adj_matrix_df)
+            adj_display = adj_matrix_df.copy()
+            adj_display.index = range(1, len(adj_display) + 1)
+            st.dataframe(adj_display)
 
             if st.button("Convert to Links"):
                 try:
@@ -459,35 +531,35 @@ elif st.session_state.current_page == "Adjacency Matrix to Links":
 
                     st.success("Conversion successful!")
                     st.write("Result (Links):")
-                    st.dataframe(links_df)
+                    links_display = links_df.copy()
+                    links_display.index = range(1, len(links_display) + 1)
+                    st.dataframe(links_display)
 
                     links_csv = links_df.to_csv(index=False)
 
-                    col1, col2, col3 = st.columns(3)
+                    st.download_button(
+                        "📥 Download CSV",
+                        data=links_csv,
+                        file_name="links.csv",
+                        mime="text/csv",
+                        key="download_csv_adj_to_links"
+                    )
 
-                    with col1:
-                        st.download_button(
-                            "Download CSV",
-                            data=links_csv,
-                            file_name="links.csv",
-                            mime="text/csv"
-                        )
+                    st.download_button(
+                        "📥 Download LINO",
+                        data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_df.iterrows()]),
+                        file_name="links.lino",
+                        mime="text/plain",
+                        key="download_lino_adj_to_links"
+                    )
 
-                    with col2:
-                        st.download_button(
-                            "Download LINO",
-                            data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_df.iterrows()]),
-                            file_name="links.lino",
-                            mime="text/plain"
-                        )
-
-                    with col3:
-                        st.download_button(
-                            "Download TXT",
-                            data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_df.iterrows()]),
-                            file_name="links.txt",
-                            mime="text/plain"
-                        )
+                    st.download_button(
+                        "📥 Download TXT",
+                        data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_df.iterrows()]),
+                        file_name="links.txt",
+                        mime="text/plain",
+                        key="download_txt_adj_to_links"
+                    )
 
                 except Exception as e:
                     st.error(f"Error converting matrix to links: {e}")
@@ -495,6 +567,7 @@ elif st.session_state.current_page == "Adjacency Matrix to Links":
             st.error(f"Error loading file: {e}")
 
 elif st.session_state.current_page == "Links to Adjacency Matrix":
+    add_theme_toggle()
     st.markdown("<h1 class='page-title'>Links to Adjacency Matrix</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -503,7 +576,9 @@ elif st.session_state.current_page == "Links to Adjacency Matrix":
         df = pd.read_csv(io.StringIO(st.session_state.dataframe_buffer))
 
         st.write("Uploaded Links:")
-        st.dataframe(df.head())
+        df_display = df.head().copy()
+        df_display.index = range(1, len(df_display) + 1)
+        st.dataframe(df_display)
 
         weight_column = None
         if len(df.columns) > 2:
@@ -517,36 +592,36 @@ elif st.session_state.current_page == "Links to Adjacency Matrix":
 
                 st.success("Conversion successful!")
                 st.write("Result (Adjacency Matrix):")
-                st.dataframe(adj_matrix_df)
+                adj_display = adj_matrix_df.copy()
+                adj_display.index = range(1, len(adj_display) + 1)
+                st.dataframe(adj_display)
 
                 adj_matrix_csv = adj_matrix_df.to_csv()
 
-                col1, col2, col3 = st.columns(3)
+                st.download_button(
+                    "📥 Download CSV",
+                    data=adj_matrix_csv,
+                    file_name="adjacency_matrix.csv",
+                    mime="text/csv",
+                    key="download_csv_links_to_adj"
+                )
 
-                with col1:
-                    st.download_button(
-                        "Download CSV",
-                        data=adj_matrix_csv,
-                        file_name="adjacency_matrix.csv",
-                        mime="text/csv"
-                    )
+                links_from_matrix = adjacency_to_links(adj_matrix_df, include_zeros=False)
+                st.download_button(
+                    "📥 Download LINO",
+                    data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_from_matrix.iterrows()]),
+                    file_name="adjacency_matrix.lino",
+                    mime="text/plain",
+                    key="download_lino_links_to_adj"
+                )
 
-                with col2:
-                    links_from_matrix = adjacency_to_links(adj_matrix_df, include_zeros=False)
-                    st.download_button(
-                        "Download LINO",
-                        data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_from_matrix.iterrows()]),
-                        file_name="adjacency_matrix.lino",
-                        mime="text/plain"
-                    )
-
-                with col3:
-                    st.download_button(
-                        "Download TXT",
-                        data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_from_matrix.iterrows()]),
-                        file_name="adjacency_matrix.txt",
-                        mime="text/plain"
-                    )
+                st.download_button(
+                    "📥 Download TXT",
+                    data="\n".join([f"({i}: {row['from']} {row['to']})" for i, row in links_from_matrix.iterrows()]),
+                    file_name="adjacency_matrix.txt",
+                    mime="text/plain",
+                    key="download_txt_links_to_adj"
+                )
 
             except Exception as e:
                 st.error(f"Error converting links to matrix: {e}")
