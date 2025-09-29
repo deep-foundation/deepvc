@@ -1,24 +1,19 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual Environment
 venv/
 env/
 ENV/
 .venv/
 
-# Jupyter Notebook
 .ipynb_checkpoints
 
-# IDE specific files
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -36,7 +31,6 @@ wheels/
 .installed.cfg
 *.egg
 
-# Unit test / coverage reports
 htmlcov/
 .tox/
 .nox/
@@ -50,7 +44,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# Environments
 .env
 .venv
 env/
