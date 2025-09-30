@@ -217,7 +217,7 @@ def add_theme_toggle():
 # --- page content ---
 # home Page
 if st.session_state.current_page == "Home":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("""
     <style>
         .home-content {
@@ -247,7 +247,7 @@ if st.session_state.current_page == "Home":
 
 # upload page
 elif st.session_state.current_page == "Uploading data":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("<h1 class='page-title'>Upload your data file</h1>", unsafe_allow_html=True)
     
     file_type = st.radio("Select file type:", ("CSV", "TXT", "LINO"), horizontal=True)
@@ -299,7 +299,7 @@ elif st.session_state.current_page == "Uploading data":
             st.error(f"Error displaying data: {e}")
 
 elif st.session_state.current_page == "Sorting the data":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("<h1 class='page-title'>Sorting the Data</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -345,7 +345,7 @@ elif st.session_state.current_page == "Sorting the data":
 
 # visualization page
 elif st.session_state.current_page == "Visualization of links":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("<h1 class='page-title'>Visualization of Links</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -428,7 +428,7 @@ elif st.session_state.current_page == "Visualization of links":
 
 # visualizing link clustering page
 elif st.session_state.current_page == "Visualizing link clustering":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("<h1 class='page-title'>Visualizing Link Clustering</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -476,7 +476,7 @@ elif st.session_state.current_page == "Visualizing link clustering":
 
 # link clustering page
 elif st.session_state.current_page == "Link clustering":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("<h1 class='page-title'>Link Clustering</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
@@ -507,7 +507,7 @@ elif st.session_state.current_page == "Link clustering":
                 st.error(f"Error clustering links: {e}")
 
 elif st.session_state.current_page == "Adjacency Matrix to Links":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("<h1 class='page-title'>Adjacency Matrix to Links</h1>", unsafe_allow_html=True)
 
     st.markdown("Upload an adjacency matrix file (CSV format)")
@@ -567,7 +567,7 @@ elif st.session_state.current_page == "Adjacency Matrix to Links":
             st.error(f"Error loading file: {e}")
 
 elif st.session_state.current_page == "Links to Adjacency Matrix":
-    add_theme_toggle()
+    # add_theme_toggle()  # Removed as per issue #7
     st.markdown("<h1 class='page-title'>Links to Adjacency Matrix</h1>", unsafe_allow_html=True)
 
     if st.session_state.dataframe_buffer is None:
